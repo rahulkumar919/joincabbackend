@@ -13,6 +13,7 @@ import authRoutes from './routes/auth.routes.js';
 import bookingRoutes from './routes/booking.routes.js';
 import userRoutes from './routes/user.routes.js';
 import paymentRoutes from './routes/payment.route.js';
+import adminRoutes from './routes/admin.routes.js';
 
 // Initialize Express app
 const app = express();
@@ -58,6 +59,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Catch undefined API routes
 app.all('/api/*', (req, res) => {

@@ -163,6 +163,13 @@ const resendOtpValidation = [
 router.post('/send_otp', authController.sendOtp);
 
 /**
+ * @route   POST /api/auth/admin-login
+ * @desc    Admin login with email + password
+ * @access  Public
+ */
+router.post('/admin-login', authController.adminLogin);
+
+/**
  * @route   POST /api/auth/verify-otp
  * @desc    Verify OTP and authenticate user
  * @access  Public

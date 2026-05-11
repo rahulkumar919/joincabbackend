@@ -589,6 +589,59 @@ export const checkPhoneExists = catchAsync(async (req, res) => {
   );
 });
 
+/**
+ * @desc    Admin login with email + password
+ * @route   POST /api/auth/admin-login
+ * @access  Public
+ */
+export const adminLogin = catchAsync(async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    throw new BadRequestError('Email and password are required');
+  }
+
+  // Find admin user by email, explicitly select adminPassword
+  const user = await User.findOne({
+    email: email.toLowerCase().trim(),
+    role: 'ADMIN',
+    isActive: true
+  }).select('+adminPassword');
+
+  if (!user) {
+    throw new BadRequestError('Invalid email or password');
+  }
+
+  if (!user.adminPassword) {
+    throw new BadRequestError('Admin password not set. Please contact super admin.');
+  }
+
+  const isMatch = await user.compareAdminPassword(password);
+  if (!isMatch) {
+    logger.warn('Admin login failed - wrong password', { email });
+    throw new BadRequestError('Invalid email or password');
+  }
+
+  user.lastLogin = new Date();
+  const token = user.getJWTToken();
+  user.token = token;
+  await user.save({ validateBeforeSave: false });
+
+  logger.info('Admin logged in', { userId: user._id, email });
+
+  return sendSuccess(res, {
+    token,
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      profilePicture: user.profilePicture,
+    },
+    expiresIn: process.env.JWT_EXPIRE || '30d'
+  }, 'Admin login successful', 200);
+});
+
 // Export all functions
 export default {
   sendOtp,
@@ -599,5 +652,6 @@ export default {
   resendOtp,
   logout,
   deleteAccount,
-  checkPhoneExists
+  checkPhoneExists,
+  adminLogin
 };

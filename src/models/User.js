@@ -1,6 +1,7 @@
 // src/models/User.js - Updated without OTP fields
 import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 
 const userSchema = new mongoose.Schema({
   phoneNumber: {
@@ -86,7 +87,12 @@ const userSchema = new mongoose.Schema({
     deviceType: String,
     //fcmToken: String,
     lastUsed: Date
-  }]
+  }],
+  // Admin password (hashed) — only set for ADMIN role users
+  adminPassword: {
+    type: String,
+    select: false   // never returned in queries by default
+  }
 }, {
   timestamps: true,
   toJSON: { virtuals: true },
@@ -120,6 +126,18 @@ userSchema.methods.getJWTToken = function () {
 userSchema.methods.updateLastLogin = function () {
   this.lastLogin = new Date();
   return this.save({ validateBeforeSave: false });
+};
+
+// Hash adminPassword before save if modified
+userSchema.pre('save', async function (next) {
+  if (!this.isModified('adminPassword') || !this.adminPassword) return next();
+  this.adminPassword = await bcrypt.hash(this.adminPassword, 12);
+  next();
+});
+
+// Compare plain password with hashed adminPassword
+userSchema.methods.compareAdminPassword = async function (candidatePassword) {
+  return bcrypt.compare(candidatePassword, this.adminPassword);
 };
 
 // Static Methods

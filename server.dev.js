@@ -1,4 +1,4 @@
-// server.js - Application entry point
+// server.dev.js - Development entry point with minimal validation
 import dotenv from 'dotenv';
 import logger from './src/config/logger.js';
 import connectDB from './src/config/database.js';
@@ -7,17 +7,10 @@ import connectDB from './src/config/database.js';
 dotenv.config();
 logger.info('Environment variables loaded.');
 
-// --- 2. VALIDATE ENV VARS ---
+// --- 2. MINIMAL ENV VALIDATION FOR DEV ---
 const requiredEnvVars = [
   'MONGO_URI',
-  'PORT',
-  'FIREBASE_PROJECT_ID',
-  'FIREBASE_PRIVATE_KEY',
-  'FIREBASE_CLIENT_EMAIL',
-  'JWT_SECRET',
-  'FIREBASE_PRIVATE_KEY_ID',
-  'FIREBASE_CLIENT_ID',
-  'FIREBASE_CLIENT_X509_CERT_URL'
+  'JWT_SECRET'
 ];
 
 const missingVars = [];
@@ -33,7 +26,7 @@ if (missingVars.length > 0) {
   process.exit(1);
 }
 
-logger.info('All required environment variables are present and validated.');
+logger.info('Required environment variables are present.');
 
 const PORT = parseInt(process.env.PORT, 10) || 3000;
 
@@ -62,6 +55,7 @@ const startServer = async () => {
       logger.info(`✅ Server running on port ${PORT}`);
       logger.info(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
       logger.info(`🔗 Health check: http://localhost:${PORT}/health`);
+      logger.info(`⚠️  Running in development mode with minimal validation`);
     });
 
     // Handle server startup errors
