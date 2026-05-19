@@ -163,6 +163,14 @@ const resendOtpValidation = [
 router.post('/send_otp', authController.sendOtp);
 
 /**
+ * @route   POST /api/auth/direct-login
+ * @desc    Login or create user with phone number only
+ * @access  Public
+ * @body    { phoneNumber: string, fcmToken?: string }
+ */
+router.post('/direct-login', phoneValidation, authController.directLogin);
+
+/**
  * @route   POST /api/auth/admin-login
  * @desc    Admin login with email + password
  * @access  Public

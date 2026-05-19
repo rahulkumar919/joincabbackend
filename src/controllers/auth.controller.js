@@ -260,6 +260,81 @@ export const verifyOtp = catchAsync(async (req, res) => {
 });
 
 /**
+ * @desc    Login or create a user with phone number only
+ * @route   POST /api/auth/direct-login
+ * @access  Public
+ */
+export const directLogin = catchAsync(async (req, res) => {
+  const { phoneNumber, fcmToken } = req.body;
+
+  if (!phoneNumber) {
+    throw new BadRequestError('Phone number is required');
+  }
+
+  const normalizedPhone = phoneNumber.replace(/\D/g, '').slice(-10);
+
+  if (!/^[6-9]\d{9}$/.test(normalizedPhone)) {
+    throw new BadRequestError('Please provide a valid 10-digit Indian phone number');
+  }
+
+  logger.info('Direct login request received', {
+    phoneNumber: maskPhoneNumber(normalizedPhone)
+  });
+
+  let user = await User.findOne({ phoneNumber: normalizedPhone });
+  const newUser = !user;
+
+  if (!user) {
+    user = new User({
+      phoneNumber: normalizedPhone,
+      isVerified: true,
+      isActive: true,
+      role: 'CUSTOMER'
+    });
+  }
+
+  user.isVerified = true;
+  user.isActive = true;
+  user.lastLogin = new Date();
+
+  if (fcmToken) {
+    user.fcmToken = fcmToken;
+  }
+
+  const token = user.getJWTToken();
+  user.token = token;
+  await user.save();
+
+  if (process.env.USE_COOKIES === 'true') {
+    setTokenCookie(res, token);
+  }
+
+  const userData = {
+    id: user._id,
+    phoneNumber: user.phoneNumber,
+    name: user.name,
+    email: user.email,
+    isVerified: user.isVerified,
+    role: user.role,
+    profilePicture: user.profilePicture,
+    address: user.address,
+    preferences: user.preferences
+  };
+
+  return sendSuccess(
+    res,
+    {
+      token,
+      user: userData,
+      newUser,
+      expiresIn: process.env.JWT_EXPIRE || '30d'
+    },
+    'Login successful',
+    200
+  );
+});
+
+/**
  * @desc    Register (create) a new user after OTP verification
  * @route   POST /api/auth/register
  * @access  Public
@@ -646,6 +721,7 @@ export const adminLogin = catchAsync(async (req, res) => {
 export default {
   sendOtp,
   verifyOtp,
+  directLogin,
   register,
   getUser,
   updateProfile,

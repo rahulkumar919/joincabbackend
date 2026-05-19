@@ -9,6 +9,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
 
 const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URL;
 const ADMIN_NAME     = process.env.ADMIN_NAME     || 'Super Admin';
@@ -27,30 +28,23 @@ console.log('✅  Connected to MongoDB');
 // Dynamically import model after connection
 const { default: User } = await import('../models/User.js');
 
-// Check if admin already exists
-let admin = await User.findOne({ email: ADMIN_EMAIL.toLowerCase() });
+const hashedPassword = await bcrypt.hash(ADMIN_PASSWORD, 12);
 
-if (admin) {
-  // Update existing admin - set password directly (will be hashed by pre-save hook)
-  admin.name = ADMIN_NAME;
-  admin.phoneNumber = ADMIN_PHONE;
-  admin.role = 'ADMIN';
-  admin.isActive = true;
-  admin.isVerified = true;
-  admin.adminPassword = ADMIN_PASSWORD; // Set plain password, model will hash it
-  await admin.save();
-} else {
-  // Create new admin
-  admin = await User.create({
-    name: ADMIN_NAME,
-    email: ADMIN_EMAIL.toLowerCase(),
-    phoneNumber: ADMIN_PHONE,
-    role: 'ADMIN',
-    isActive: true,
-    isVerified: true,
-    adminPassword: ADMIN_PASSWORD, // Set plain password, model will hash it
-  });
-}
+const admin = await User.findOneAndUpdate(
+  { email: ADMIN_EMAIL.toLowerCase() },
+  {
+    $set: {
+      name: ADMIN_NAME,
+      email: ADMIN_EMAIL.toLowerCase(),
+      phoneNumber: ADMIN_PHONE,
+      role: 'ADMIN',
+      isActive: true,
+      isVerified: true,
+      adminPassword: hashedPassword,
+    }
+  },
+  { upsert: true, new: true, runValidators: false }
+);
 
 console.log(`✅  Admin user ready:`);
 console.log(`    Name    : ${admin.name}`);
