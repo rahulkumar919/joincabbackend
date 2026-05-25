@@ -1903,7 +1903,8 @@ export const getFareEstimate = catchAsync(async (req, res) => {
   const {
     from,
     to,
-    type,
+    type: typeParam,
+    bookingType,
     distance,
     vehicleType,
     startDateTime,
@@ -1912,6 +1913,9 @@ export const getFareEstimate = catchAsync(async (req, res) => {
     toCoordinates,
     includeTolls // --- [ADDED] ---
   } = req.body;
+
+  // Support both 'type' and 'bookingType' parameters
+  const type = bookingType || typeParam;
 
   // Validate required fields
   if (!type) {
